@@ -1,17 +1,23 @@
-Auto Create EVM & Auto Sending opBNB
+# 🚀 Auto Create EVM and Sending OpBNB
 Source https://github.com/hajilok/autotx-evm
 
-First setup your private key in .env
-
-nano .env
-PRIVATE_KEY=fundingprivatekey
-
-
-setting how much opBNB for sending other wallet , in index.js line 102
-
-How to run?
-
-npm i
-
+## ⚙️ Setup
+1. Create a `.env` file in the same directory with the following content:
+   ```
+   PRIVATE_KEY=fundingprivatekey
+    ```
+   
+## 🚀 Usage
+Run the script with the following command:
+```bash
+npm install
+```
+```bash
 node index.js
+```
+
+ ## 📄 Note
+   ```bash
+    setting how much opBNB for sending other walletin index.js line 102
+   ```
 
