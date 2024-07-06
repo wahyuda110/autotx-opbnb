@@ -99,7 +99,7 @@ function savePrivateKeyToFile(privateKey, filePath) {
         savePrivateKeyToFile(newWallet.privateKey, 'privatekey.txt');
 
         // Jumlah opBNB yang ingin dikirim (dalam ether, sesuaikan jika perlu)
-        const amount = 0.00000015; // ubah sesuai nominal yang diinginkan
+        const amount = 0.0000015; // ubah sesuai nominal yang diinginkan
 
         let transactionSuccess = false;
         while (!transactionSuccess) {
