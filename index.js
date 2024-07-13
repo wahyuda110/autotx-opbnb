@@ -1,12 +1,43 @@
 import { ethers } from "ethers";
 import fs from "fs";
 import dotenv from 'dotenv';
+import readline from 'readline';
 dotenv.config();
 
 // Konfigurasi jaringan
 const rpcUrl = "https://opbnb-mainnet-rpc.bnbchain.org";
 const chainId = 204;
 const provider = new ethers.providers.JsonRpcProvider(rpcUrl);
+
+// Fungsi untuk mengenerate wallet baru
+function generateRandomWallet() {
+    const randomWallet = ethers.Wallet.createRandom();
+    const mnemonic = randomWallet.mnemonic.phrase;
+    const address = randomWallet.address;
+    const privateKey = randomWallet.privateKey;
+
+    return {
+        mnemonic: mnemonic,
+        address: address,
+        privateKey: privateKey
+    };
+}
+
+// Simpan wallet ke dalam file .txt tanpa menghapus data sebelumnya
+function saveWalletToFile(wallet) {
+    const walletData = `
+  Mnemonic: ${wallet.mnemonic}
+  Address: ${wallet.address}
+  Private Key: ${wallet.privateKey}\n\n`;
+    fs.appendFileSync('result.txt', walletData, (err) => {
+        if (err) throw err;
+    });
+
+    const privateKeyData = `${wallet.privateKey}\n`;
+    fs.appendFileSync('pk.txt', privateKeyData, (err) => {
+        if (err) throw err;
+    });
+}
 
 // Fungsi untuk mengirim opBNB
 async function sendopBNB(fromPrivateKey, toAddress, amount, delay = 0) {
@@ -56,26 +87,16 @@ async function sendopBNB(fromPrivateKey, toAddress, amount, delay = 0) {
     }
 }
 
-// Fungsi untuk mengenerate wallet baru
-function generateWallet() {
-    const wallet = ethers.Wallet.createRandom();
-    return {
-        address: wallet.address,
-        privateKey: wallet.privateKey,
-    };
-}
-
-// Simpan wallet ke dalam file .txt tanpa menghapus data sebelumnya
-function saveWalletToFile(wallet, filePath, count) {
-    const walletData = `================Akun Ke ${count}=================\nAddress: ${wallet.address}\nPrivate Key: ${wallet.privateKey}\n\n`;
-    fs.appendFileSync(filePath, walletData, 'utf-8');
-    console.log(`Address dan Private Key disimpan di ${filePath}`);
-}
-
-// Simpan private key ke dalam file privatekey.txt tanpa menghapus data sebelumnya
-function savePrivateKeyToFile(privateKey, filePath) {
-    fs.appendFileSync(filePath, `${privateKey}\n`, 'utf-8');
-    console.log(`Private Key disimpan di ${filePath}`);
+// Fungsi untuk mengenerate beberapa wallet
+function autoGenerateWallets(numberOfWallets) {
+    for (let i = 0; i < numberOfWallets; i++) {
+        const wallet = generateRandomWallet();
+        console.log(`Generated Wallet:
+            Mnemonic: ${wallet.mnemonic}
+            Address: ${wallet.address}
+            Private Key: ${wallet.privateKey}`);
+        saveWalletToFile(wallet);
+    }
 }
 
 // Fungsi utama
@@ -84,41 +105,47 @@ function savePrivateKeyToFile(privateKey, filePath) {
     const fromPrivateKey = process.env.PRIVATE_KEY; // Ganti dengan nama variabel environment yang benar
     let count = 1;
 
-    while (true) {
-        // Generate alamat dompet baru untuk penerima
-        const newWallet = generateWallet();
-        const toAddress = newWallet.address;
+    const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout
+    });
 
-        console.log(`Address: ${toAddress}`);
-        console.log(`Private Key: ${newWallet.privateKey}`); // Simpan ini jika perlu
-
-        // Simpan wallet baru ke dalam file .txt tanpa menghapus data sebelumnya
-        saveWalletToFile(newWallet, 'result.txt', count);
-
-        // Simpan private key ke dalam file privatekey.txt tanpa menghapus data sebelumnya
-        savePrivateKeyToFile(newWallet.privateKey, 'privatekey.txt');
-
-        // Jumlah opBNB yang ingin dikirim (dalam ether, sesuaikan jika perlu)
-        const amount = 0.0000035; // ubah sesuai nominal yang diinginkan
-
-        let transactionSuccess = false;
-        while (!transactionSuccess) {
-            try {
-                await sendopBNB(fromPrivateKey, toAddress, amount);
-                transactionSuccess = true; // Berhasil mengirim transaksi, lanjut ke wallet berikutnya
-            } catch (error) {
-                console.error(`Error: ${error.message}`);
-                await new Promise(resolve => setTimeout(resolve, 10000)); // Tunggu 10 detik sebelum mencoba lagi
-            }
+    rl.question('Berapa banyak wallet yang ingin di-generate? ', async (answer) => {
+        const numberOfWallets = parseInt(answer, 10);
+        if (isNaN(numberOfWallets) || numberOfWallets <= 0) {
+            console.log('Input tidak valid. Silakan masukkan angka yang valid.');
+            rl.close();
+            return;
         }
 
-        count++; // Increment the count for the next wallet
+        for (let i = 0; i < numberOfWallets; i++) {
+            // Generate alamat dompet baru untuk penerima
+            const newWallet = generateRandomWallet();
+            const toAddress = newWallet.address;
 
-        // Tunggu 30 detik sebelum membuat wallet baru
-        console.log("==================== Menunggu Untuk Akun Berikut nya ====================");
-        await new Promise(resolve => setTimeout(resolve, 30000));
-    }
+            console.log(`Address: ${toAddress}`);
+            console.log(`Mnemonic: ${newWallet.mnemonic}`); // Tampilkan Mnemonic
+
+            // Simpan wallet baru ke dalam file .txt tanpa menghapus data sebelumnya
+            saveWalletToFile(newWallet);
+
+            // Jumlah opBNB yang ingin dikirim (dalam ether, sesuaikan jika perlu)
+            const amount = 0.000001; // ubah sesuai nominal yang diinginkan
+
+            let transactionSuccess = false;
+            while (!transactionSuccess) {
+                try {
+                    await sendopBNB(fromPrivateKey, toAddress, amount);
+                    transactionSuccess = true; // Berhasil mengirim transaksi, lanjut ke wallet berikutnya
+                } catch (error) {
+                    console.error(`Error: ${error.message}`);
+                    await new Promise(resolve => setTimeout(resolve, 10000)); // Tunggu 10 detik sebelum mencoba lagi
+                }
+            }
+
+            count++; // Increment the count for the next wallet
+        }
+
+        rl.close();
+    });
 })();
-
-// Thanks To
-// Recode Form https://github.com/hajilok/autotx-evm
