@@ -18,6 +18,6 @@ node index.js
 
  ## 📄 Note
    ```bash
-    setting how much opBNB for sending other walletin index.js line 102
+    setting how much opBNB for sending other walletin index.js line 133
    ```
 
